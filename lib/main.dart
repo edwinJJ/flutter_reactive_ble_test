@@ -40,12 +40,20 @@ class _BLEScannerState extends State<BLEScanner> {
   String connectionStatus = 'Disconnected';
   String receivedMessage = '';
   String? connectedDeviceId;
-  bool isReconnecting = false;
+  // bool isReconnecting = false;
   // 예시 UUID - 실제 디바이스의 UUID로 변경해야 합니다.
-  final Uuid serviceUuid = Uuid.parse("6e400001-b5a3-f393-e0a9-e50e24dcca9e");
-  // final Uuid characteristicUuid = Uuid.parse("6e400007-b5a3-f393-e0a9-e50e24dcca9e");
+  // TEST
+  // final Uuid serviceUuid = Uuid.parse("6e400001-b5a3-f393-e0a9-e50e24dcca9e");
+  // final Uuid writeCharacteristicUuid =
+  //     Uuid.parse("6e400007-b5a3-f393-e0a9-e50e24dcca9e");
+  // final Uuid notifyCharacteristicUuid =
+  //     Uuid.parse("6e400006-b5a3-f393-e0a9-e50e24dcca9e"); // 알림을 위한 특성 UUID
+  // final Uuid readCharacteristicUuid =
+  //     Uuid.parse("6e400004-b5a3-f393-e0a9-e50e24dcca9e"); // 읽기 특성 UUID
+  // ECU
+  final Uuid serviceUuid = Uuid.parse("0000180d-0000-1000-8000-00805f9b34fb");
   final Uuid writeCharacteristicUuid =
-      Uuid.parse("6e400007-b5a3-f393-e0a9-e50e24dcca9e");
+      Uuid.parse("b437b6fa-e40e-424e-8b31-6cd5b4aba99b");
   final Uuid notifyCharacteristicUuid =
       Uuid.parse("6e400006-b5a3-f393-e0a9-e50e24dcca9e"); // 알림을 위한 특성 UUID
   final Uuid readCharacteristicUuid =
@@ -102,10 +110,10 @@ class _BLEScannerState extends State<BLEScanner> {
       print('@@@@@@@@@@@@@@onError: $error');
     });
 
-    // 5초 후에 자동으로 스캔을 중지합니다.
-    scanTimer = Timer(const Duration(seconds: 5), () {
+    // 20초 후에 자동으로 스캔을 중지합니다.
+    scanTimer = Timer(const Duration(seconds: 10), () {
       stopScan();
-      print('@@@@@@@@@@@@@@Scan stopped after 5 seconds');
+      print('@@@@@@@@@@@@@@Scan stopped after 10 seconds');
     });
   }
 
@@ -124,39 +132,40 @@ class _BLEScannerState extends State<BLEScanner> {
     connectionSubscription?.cancel();
     connectionSubscription = flutterReactiveBle
         .connectToDevice(
-      id: device.id,
-      connectionTimeout: const Duration(seconds: 5),
-    )
-        .listen(
-      (connectionState) {
-        print(
-            '@@@@@@@@@@@@@@Connection state: ${connectionState.connectionState}');
-        if (connectionState.connectionState ==
-            DeviceConnectionState.connected) {
-          print('@@@@@@@@@@@@@@Connected to device: ${device.name}');
-          setState(() {
-            connectedDeviceId = device.id;
-            isReconnecting = false;
-          });
-          // 연결 후 잠시 대기
-          Future.delayed(const Duration(seconds: 2), () {
-            subscribeToNotifications(device.id);
-          });
-        } else if (connectionState.connectionState ==
-            DeviceConnectionState.disconnected) {
-          print('@@@@@@@@@@@@@@Disconnected from device: ${device.name}');
-          if (!isReconnecting) {
-            // reconnect(device);
-          }
-        }
-      },
-      onError: (Object error) {
-        print('@@@@@@@@@@@@@@Connection error: $error');
-        if (!isReconnecting) {
-          // reconnect(device);
-        }
-      },
-    );
+            id: device.id, connectionTimeout: const Duration(seconds: 5))
+        .listen((connectionState) {
+      print(
+          '@@@@@@@@@@@@@@Connection state: ${connectionState.connectionState}');
+      if (connectionState.connectionState == DeviceConnectionState.connected) {
+        print('@@@@@@@@@@@@@@Connected to device: ${device.name}');
+        setState(() {
+          connectionStatus = 'connected!';
+          receivedMessage = '';
+          connectedDeviceId = device.id;
+          // isReconnecting = false;
+        });
+        // 연결 후 잠시 대기
+        Future.delayed(const Duration(seconds: 2), () {
+          // subscribeToNotifications(device.id);
+        });
+      } else if (connectionState.connectionState ==
+          DeviceConnectionState.disconnected) {
+        print('@@@@@@@@@@@@@@Disconnected from device: ${device.name}');
+        setState(() {
+          connectionStatus = 'Disconnected';
+          connectedDeviceId = '';
+          receivedMessage = '';
+        });
+        // if (!isReconnecting) {
+        // reconnect(device);
+        // }
+      }
+    }, onError: (Object error) {
+      print('@@@@@@@@@@@@@@Connection error: $error');
+      // if (!isReconnecting) {
+      // reconnect(device);
+      // }
+    });
   }
 
   // void reconnect(DiscoveredDevice device) {
@@ -239,7 +248,11 @@ class _BLEScannerState extends State<BLEScanner> {
 
     final message = {
       "category": "wifi",
-      "info": {"action": "connect", "ssid": "swdnG", "psk": "master2019"}
+      "info": {
+        "action": "connect",
+        "ssid": "KT_GiGA_5G_16D0",
+        "psk": "xde3hd6985"
+      }
     };
 
     final jsonMessage = jsonEncode(message);
